@@ -1,0 +1,9 @@
+
+Token = MTE1MTY4MzA5MjE5MzQ4NDgwMA.G808qp.M7ojB1UNuy9iOgyQ5Dcvv3JVVF-aH_lIt8Qwac
+
+
+npm init -y
+
+npm i discord.js
+
+npm i -g nodemon
