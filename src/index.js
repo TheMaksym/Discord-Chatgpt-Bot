@@ -36,31 +36,31 @@ client.on('messageCreate', (message) => {
     }
     if (godComplex === 'God?' | godComplex === 'God.' | godComplex === 'God ' | godComplex === 'God!'){
         async function runConversation() {
-            //const messages = [{"role": "user", "content" : messageToGod + ". Only Give a response that is less than 2000 characters and in a short format."}];
-            const prompt_pre = "Provide a response to the following discord message in 2000 characters or less. Only return the response and nothing else.\n###\n"
+            const prompt_pre = "Provide a response to the following discord message in 2000 characters or less. Only return the response and nothing else.\n###\n";
             const messages = [{"role": "user", "content" : prompt_pre + messageToGod + "\n###"}];
         
             const response = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo", //gpt-3.5-turbo //gpt-4
+                model: "gpt-4", //gpt-3.5-turbo //gpt-4
                 messages: messages,
             });
-            
+        
             const responseMessage = response.choices[0].message;
-
             console.log("Tokens used in API call: ", response['usage']['total_tokens']);
-
-            return responseMessage.content;
+        
+            // Truncate the response if it exceeds 2000 characters
+            const truncatedResponse = responseMessage.content.length > 2000 ? responseMessage.content.slice(0, 2000) : responseMessage.content;
+        
+            return truncatedResponse;
         }
         runConversation().then((responseContent) => {message.reply(responseContent);}).catch(console.error);
     }
-    if (godComplex === 'god ') {
-        message.reply('YOU WILL REFER TO ME AS "God" !!');
+    if (godComplex === 'god?' | godComplex === 'god.' | godComplex === 'god ' | godComplex === 'god!') {
+        message.reply('YOU WILL REFER TO ME AS "God {question}" !!');
     }
     if (message.content === 'nerd') {
         message.reply('bozo');
     }
-
-    console.log(message.content);
+    // console.log(message.content);
 })
 
 client.login(process.env.DISCORD_KEY)
