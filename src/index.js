@@ -8,7 +8,7 @@ const cron = require('node-cron');
 const openai = new OpenAI({
     key: process.env.OPENAI_API_KEY, // https://platform.openai.com/account/usage
 });
-const EXCLUDED_USER_IDS = [249325825076232192, 156869924621385728, 1015163673486049332]; // 'USER_ID_1', 'USER_ID_2', 'USER_ID_3'
+const EXCLUDED_USER_IDS = [249325825076232192, 156869924621385728, 1015163673486049332, 322104281282904065]; // 'USER_ID_1', 'USER_ID_2', 'USER_ID_3'
 //Actual Discord bot
 const { Client, IntentsBitField, AttachmentBuilder} = require('discord.js'); // https://discord.com/developers/applications
 
