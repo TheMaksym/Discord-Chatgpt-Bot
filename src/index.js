@@ -129,7 +129,7 @@ rl.on('close', () => {
         const today = new Date().toDateString();
         const userCallCount = userCallCounts.get(userId) || { date: today, count: 0 };
         
-        if (EXCLUDED_USER_IDS.includes(userId) || userCallCount.date === today && userCallCount.count < 2) { // limites calls to 2** change this value for more
+        if (EXCLUDED_USER_IDS.includes(userId) || (userCallCount.date === today && userCallCount.count < 2)) { // limites calls to 2** change this value for more
             if (!EXCLUDED_USER_IDS.includes(userId)) {
                 userCallCount.count++;
                 userCallCounts.set(userId, userCallCount);
@@ -162,13 +162,13 @@ rl.on('close', () => {
             message.reply("You have reached the limit of 2 calls for today (OpenAI wants too much money for this)."); // ** change this for calls
         }
     }
-    if (inputString.startsWith('God of VVV' )) {
+    if (inputString.startsWith('God of VVV')) {
         console.log("God of VVV command detected");
         const userId = Number(message.author.id);
         const today = new Date().toDateString();
         const userCallCount = userVVVCallCounts.get(userId) || { date: today, count: 0 };
-        
-        if (EXCLUDED_USER_IDS.includes(userId), userCallCount.date === today && userCallCount.count < 2) { 
+    
+        if (EXCLUDED_USER_IDS.includes(userId) || (userCallCount.date === today && userCallCount.count < 2)) { 
             if (!EXCLUDED_USER_IDS.includes(userId)) {
                 userCallCount.count++;
                 userVVVCallCounts.set(userId, userCallCount);
@@ -185,30 +185,28 @@ rl.on('close', () => {
                     messages: messages,
                 });
                 console.log("Response from OpenAI:", response);
-
+    
                 const responseMessage = response.choices[0].message;
                 console.log("Tokens used in API call: ", response['usage']['total_tokens']);
-        
+    
                 let responseContent = responseMessage.content;
                 let messagesToSend = [];
-                
+    
                 while (responseContent.length > characterLimit) {
                     messagesToSend.push(responseContent.slice(0, characterLimit));
                     responseContent = responseContent.slice(characterLimit);
                 }
-
+    
                 messagesToSend.push(responseContent);
-
+    
                 for (let messageToSend of messagesToSend) {
                     message.reply(messageToSend);
                 }
             }
             runConversation(message).catch(console.error);
-        }
-        else {
+        } else {
             message.reply("You have reached the limit of 2 calls for today.");
         }
-       
     }
     
     else if (godComplex === 'God?' | godComplex === 'God.' | godComplex === 'God '| godComplex === 'God!'){
