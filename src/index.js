@@ -124,14 +124,16 @@ rl.on('close', () => {
     
     if (inputString.startsWith('God conjure ')) {
         console.log(conjureToGod);
-        const userId = message.author.id;
+        const userId = Number(message.author.id);
         console.log(message.author.username + " Created image");
         const today = new Date().toDateString();
         const userCallCount = userCallCounts.get(userId) || { date: today, count: 0 };
         
-        if (userCallCount.date === today && userCallCount.count < 2) { // ** change this value for more
-            userCallCount.count++;
-            userCallCounts.set(userId, userCallCount);
+        if (EXCLUDED_USER_IDS.includes(userId) || userCallCount.date === today && userCallCount.count < 2) { // limites calls to 2** change this value for more
+            if (!EXCLUDED_USER_IDS.includes(userId)) {
+                userCallCount.count++;
+                userCallCounts.set(userId, userCallCount);
+            }
             message.reply("Please allow a moment for the image to generate. If it's inappropriate it won't generate.");
             async function runDalle() {
                 const response = await axios.post('https://api.openai.com/v1/images/generations', {
@@ -162,14 +164,15 @@ rl.on('close', () => {
     }
     if (inputString.startsWith('God of VVV' )) {
         console.log("God of VVV command detected");
-        const userId = message.author.id;
+        const userId = Number(message.author.id);
         const today = new Date().toDateString();
         const userCallCount = userVVVCallCounts.get(userId) || { date: today, count: 0 };
         
-        if (userCallCount.date === today && userCallCount.count < 2) { 
-            console.log("User has not reached call limit");
-            userCallCount.count++;
-            userVVVCallCounts.set(userId, userCallCount);
+        if (EXCLUDED_USER_IDS.includes(userId), userCallCount.date === today && userCallCount.count < 2) { 
+            if (!EXCLUDED_USER_IDS.includes(userId)) {
+                userCallCount.count++;
+                userVVVCallCounts.set(userId, userCallCount);
+            }
             async function runConversation(message) {
                 console.log("Running conversation function");
                 const messages = [
@@ -251,10 +254,9 @@ rl.on('close', () => {
     }
     if (message.content === 'god') {
         console.log(message.author.id + " " + message.author.username);
-        if(message.author.id == 249325825076232192){
+        if (EXCLUDED_USER_IDS.includes(Number(message.author.id))) {
             message.reply('You are an amazing human being.');
-        }
-        else{
+        } else {
             message.reply('I gochu fam.');
         }
     }
