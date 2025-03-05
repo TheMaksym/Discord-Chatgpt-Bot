@@ -134,6 +134,7 @@ rl.on('close', () => {
                 userCallCount.count++;
                 userCallCounts.set(userId, userCallCount);
             }
+            message.react('👍');
             message.reply("Please allow a moment for the image to generate. If it's inappropriate it won't generate.");
             async function runDalle() {
                 const response = await axios.post('https://api.openai.com/v1/images/generations', {
@@ -156,23 +157,25 @@ rl.on('close', () => {
             }).catch(console.error);
         } else if (userCallCount.date !== today) {
             userCallCounts.set(userId, { date: today, count: 1 });
+            message.react('👍');
             message.reply("Please allow a moment for the image to generate. If it's inappropriate it won't generate.");
             // Your code for handling the image generation
         } else {
             message.reply("You have reached the limit of 2 calls for today (OpenAI wants too much money for this)."); // ** change this for calls
         }
     }
-    if (inputString.startsWith('God of VVV')) {
+    else if (inputString.startsWith('God of VVV')) {
         console.log("God of VVV command detected");
         const userId = Number(message.author.id);
         const today = new Date().toDateString();
         const userCallCount = userVVVCallCounts.get(userId) || { date: today, count: 0 };
     
-        if (EXCLUDED_USER_IDS.includes(userId) || (userCallCount.date === today && userCallCount.count < 2)) { 
+        if (EXCLUDED_USER_IDS.includes(userId) || (userCallCount.date === today && userCallCount.count < 3)) { 
             if (!EXCLUDED_USER_IDS.includes(userId)) {
                 userCallCount.count++;
                 userVVVCallCounts.set(userId, userCallCount);
             }
+            message.react('👍');
             async function runConversation(message) {
                 console.log("Running conversation function");
                 const messages = [
@@ -210,6 +213,7 @@ rl.on('close', () => {
     }
     
     else if (godComplex === 'God?' | godComplex === 'God.' | godComplex === 'God '| godComplex === 'God!'){
+        message.react('👍');
         async function runConversation(message) {
             const messages = [{"role": "user", "content" : prompt_pre + messageToGod + "\n###"}];
     
