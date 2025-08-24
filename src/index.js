@@ -138,10 +138,13 @@ rl.on('close', () => {
             message.reply("Please allow a moment for the image to generate. If it's inappropriate it won't generate.");
             async function runDalle() {
                 const response = await axios.post('https://api.openai.com/v1/images/generations', {
-                    model: "dall-e-3",
+                    model: "dall-e-3", //gpt-image-1 //dall-e-3 // dall-e-2
                     prompt: conjureToGod,
                     n: 1,
                     size: "1024x1024",
+                    // quality: "medium", //or "low", "medium", "high"
+                    // response_format: "b64_json",     // or "b64_json"
+                    // moderation: "high" //or "high", "off", auto
                 }, {
                     headers: {
                         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -184,7 +187,7 @@ rl.on('close', () => {
                 ];
                 console.log("Message to VVV:", messageToVVV);
                 const response = await openai.chat.completions.create({
-                    model: "gpt-4o", 
+                    model: "gpt-4o-mini", 
                     messages: messages,
                 });
                 console.log("Response from OpenAI:", response);
@@ -212,13 +215,13 @@ rl.on('close', () => {
         }
     }
     
-    else if (godComplex === 'God?' | godComplex === 'God.' | godComplex === 'God '| godComplex === 'God!'){
+    else if (godComplex === 'God?' | godComplex === 'God.' | godComplex === 'God!'){
         message.react('👍');
         async function runConversation(message) {
             const messages = [{"role": "user", "content" : prompt_pre + messageToGod + "\n###"}];
     
             const response = await openai.chat.completions.create({
-                model: "gpt-4o", //gpt-3.5-turbo //gpt-4 //gpt-4o
+                model: "gpt-4o-mini", //gpt-3.5-turbo //gpt-4 //gpt-4o //gpt-4o-mini
                 messages: messages,
             });
     
@@ -246,7 +249,7 @@ rl.on('close', () => {
     
     if (godComplex === 'god?' | godComplex === 'god.' | godComplex === 'god ' | godComplex === 'god!') {
         const helpMessage = `**How to use ${client.user.username}**\n` +
-                            `• Type "God " where 'g' is capital 'G' followed by your question to get a response.\n` +
+                            `• Type "God!" where 'g' is capital 'G' followed by your question to get a response.\n` +
                             `• Example: "God {message to send the god}"\n` +
                             `**If it's inappropriate the image won't generate; PG13 or lower. (You only get two call of this per day make it count)**\n` +
                             `• Example: "God conjure {image to create}"\n` +
