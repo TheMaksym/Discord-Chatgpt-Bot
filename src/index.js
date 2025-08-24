@@ -25,6 +25,21 @@ const userCallCounts = new Map();
 const userVVVCallCounts = new Map();
 let lastResetDate = new Date().toDateString();
 
+// Helper to refund a user's call count on failure
+function refundUserCallCount(map, userId) {
+    if (EXCLUDED_USER_IDS.includes(userId)) return; // don't modify excluded users
+    const entry = map.get(userId);
+    if (!entry) return;
+    // ensure we only decrement today's count
+    const today = new Date().toDateString();
+    if (entry.date !== today) return;
+    if (entry.count && entry.count > 0) {
+        entry.count = Math.max(0, entry.count - 1);
+        map.set(userId, entry);
+        console.log(`Refunded 1 call for user ${userId}. New count: ${entry.count}`);
+    }
+}
+
 function resetCallCountsIfNeeded() {
     const today = new Date().toDateString();
     if (today !== lastResetDate) {
@@ -137,27 +152,54 @@ rl.on('close', () => {
             message.react('👍');
             message.reply("Please allow a moment for the image to generate. If it's inappropriate it won't generate.");
             async function runDalle() {
-                const response = await axios.post('https://api.openai.com/v1/images/generations', {
-                    model: "dall-e-3", //gpt-image-1 //dall-e-3 // dall-e-2
-                    prompt: conjureToGod,
-                    n: 1,
-                    size: "1024x1024",
-                    // quality: "medium", //or "low", "medium", "high"
-                    // response_format: "b64_json",     // or "b64_json"
-                    // moderation: "high" //or "high", "off", auto
-                }, {
-                    headers: {
-                        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                        'Content-Type': 'application/json'
+                try {
+                    const response = await axios.post('https://api.openai.com/v1/images/generations', {
+                        model: "dall-e-3", //gpt-image-1 //dall-e-3 // dall-e-2
+                        prompt: conjureToGod,
+                        n: 1,
+                        size: "1024x1024",
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    // Basic validation: ensure response has image URL
+                    if (!response || !response.data || !response.data.data || !response.data.data[0]) {
+                        // Refund the user's image call
+                        refundUserCallCount(userCallCounts, userId);
+                        await message.reply("Image generation failed or returned no image. Your image credit has been refunded.");
+                        return null;
                     }
-                });
-                const imageUrl = response.data.data[0].url;
-                const imageAttachment = new AttachmentBuilder(imageUrl, { name: 'image.png' });
-                return imageAttachment;
+
+                    const imageUrl = response.data.data[0].url;
+
+                    // If the API returns an object indicating moderation or blocked content, treat as inappropriate
+                    if (!imageUrl || typeof imageUrl !== 'string') {
+                        refundUserCallCount(userCallCounts, userId);
+                        await message.reply("Image was not generated (likely inappropriate). Your image credit has been refunded.");
+                        return null;
+                    }
+
+                    const imageAttachment = new AttachmentBuilder(imageUrl, { name: 'image.png' });
+                    return imageAttachment;
+                } catch (err) {
+                    console.error('DALL·E request error:', err && err.response ? err.response.data || err.response.statusText : err);
+                    refundUserCallCount(userCallCounts, userId);
+                    try { await message.reply("Failed to generate image due to an error. Your image credit has been refunded."); } catch (e) { /* ignore */ }
+                    return null;
+                }
             }
+
             runDalle().then((imageAttachment) => {
-                message.reply({ files: [imageAttachment] });
-            }).catch(console.error);
+                if (imageAttachment) {
+                    message.reply({ files: [imageAttachment] }).catch(console.error);
+                }
+            }).catch((err) => {
+                console.error('runDalle error:', err);
+                refundUserCallCount(userCallCounts, userId);
+            });
         } else if (userCallCount.date !== today) {
             userCallCounts.set(userId, { date: today, count: 1 });
             message.react('👍');
@@ -186,25 +228,46 @@ rl.on('close', () => {
                     {"role": "user", "content" : prompt_pre + message.author.id + " " + message.author.username +"\n###\n" + messageToVVV + "\n###"}
                 ];
                 console.log("Message to VVV:", messageToVVV);
-                const response = await openai.chat.completions.create({
-                    model: "gpt-4o-mini", 
-                    messages: messages,
-                });
-                console.log("Response from OpenAI:", response);
-    
-                const responseMessage = response.choices[0].message;
-                console.log("Tokens used in API call: ", response['usage']['total_tokens']);
-    
-                let responseContent = responseMessage.content;
+
+                let response, responseMessage, responseContent;
+                try {
+                    response = await openai.chat.completions.create({
+                        model: "gpt-4o-mini", 
+                        messages: messages,
+                    });
+                    console.log("Response from OpenAI:", response);
+
+                    if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {
+                        refundUserCallCount(userVVVCallCounts, userId);
+                        await message.reply("No usable response was returned. Your VVV credit has been refunded.");
+                        return;
+                    }
+
+                    responseMessage = response.choices[0].message;
+                    console.log("Tokens used in API call: ", response['usage'] && response['usage']['total_tokens']);
+
+                    responseContent = responseMessage.content;
+                    if (!responseContent || typeof responseContent !== 'string' || responseContent.trim().length === 0) {
+                        refundUserCallCount(userVVVCallCounts, userId);
+                        await message.reply("The assistant returned an empty response. Your VVV credit has been refunded.");
+                        return;
+                    }
+                } catch (err) {
+                    console.error('VVV chat error:', err && err.response ? err.response.data || err.response.statusText : err);
+                    refundUserCallCount(userVVVCallCounts, userId);
+                    try { await message.reply("Failed to get a response due to an error. Your VVV credit has been refunded."); } catch (e) { /* ignore */ }
+                    return;
+                }
+
                 let messagesToSend = [];
-    
+
                 while (responseContent.length > characterLimit) {
                     messagesToSend.push(responseContent.slice(0, characterLimit));
                     responseContent = responseContent.slice(characterLimit);
                 }
-    
+
                 messagesToSend.push(responseContent);
-    
+
                 for (let messageToSend of messagesToSend) {
                     message.reply(messageToSend);
                 }
